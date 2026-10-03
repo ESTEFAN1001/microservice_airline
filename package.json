@@ -1,0 +1,27 @@
+{
+  "name": "airline-flight-microservice",
+  "version": "1.0.0",
+  "description": "Flight emulation microservice with filtering for Bolivian routes, ready for Render hosting",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "microservice",
+    "airline",
+    "flights",
+    "render",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
