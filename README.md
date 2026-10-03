@@ -1,6 +1,6 @@
-# Airline Flight Microservice
+# Airline Flight & Cargo Microservice
 
-A lightweight, production-ready REST microservice emulating flight routes across Bolivia. Built with Node.js and Express, with in-memory data, ready for instant hosting on [Render](https://render.com).
+A lightweight, production-ready REST microservice emulating formal commercial airline flight and payload/cargo capacity across Bolivia. Built with Node.js and Express, with in-memory data, ready for instant hosting on [Render](https://render.com).
 
 ## Getting Started Locally
 
@@ -31,10 +31,83 @@ npm test
 
 ---
 
-## API Endpoints
+## Data Structure (Formal Airline Schema)
+
+Each flight item strictly follows this formal structure:
+
+```json
+{
+  "flight_id": "8J-105-20261015-LPB-VVI",
+  "carrier_code": "8J",
+  "flight_number": "105",
+  "aircraft": {
+    "type": "AR8",
+    "model": "Avro RJ85",
+    "registration": "CP-3087",
+    "cargo_type": "BULK_LOADED"
+  },
+  "route": {
+    "origin": "LPB",
+    "destination": "VVI",
+    "departure": "2026-10-15T08:00:00-04:00"
+  },
+  "payload_capacity": {
+    "weight_unit": "KG",
+    "max_structural_cargo_payload": 2200.0,
+    "current_operational_limit": 1800.0,
+    "breakdown": {
+      "passenger_baggage_allocated": 950.0,
+      "commercial_cargo_capacity": 850.0,
+      "commercial_cargo_booked": 500.0,
+      "available_cargo_capacity": 350.0
+    },
+    "compartments": [
+      {
+        "compartment_id": "HOLD_1_FWD",
+        "name": "Bodega Delantera",
+        "max_weight_limit": 1100.0,
+        "current_weight": 700.0,
+        "content_types": ["BAGGAGE", "CARGO"]
+      },
+      {
+        "compartment_id": "HOLD_2_AFT",
+        "name": "Bodega Trasera",
+        "max_weight_limit": 1100.0,
+        "current_weight": 750.0,
+        "content_types": ["BAGGAGE", "CARGO", "MAIL"]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Supported Carriers and Airports
+
+### Carriers
+- **`8J`**: EcoJet (Fleet: Avro RJ85 `AR8`)
+- **`OB`**: Boliviana de Aviación / BoA (Fleet: Boeing 737-800 `B738`, Boeing 737-700 `B737`)
+
+### Airport & Department Code Aliases
+The search automatically normalizes department abbreviations and official IATA codes:
+- **Cochabamba**: `CBBA` or `CBB`
+- **La Paz**: `LPZ` or `LPB`
+- **Santa Cruz**: `VVI`
+- **Tarija**: `TJA`
+- **Sucre**: `SRE`
+- **Cobija**: `CIJ`
+- **Trinidad**: `TDD`
+- **Oruro**: `ORU`
+- **Potosí**: `POT` or `POI`
+- **Uyuni**: `UYU`
+
+---
+
+## API Endpoints & Filtering
 
 ### 1. Get All Flights (No Filter)
-Returns all available flights.
+Returns all available flights across dates.
 
 - **URL**: `/flights` (or `/api/flights`)
 - **Method**: `GET`
@@ -42,96 +115,58 @@ Returns all available flights.
   ```bash
   curl http://localhost:3000/flights
   ```
-- **Example Response**:
-  ```json
-  [
-    { "flight_number": "OB-101", "origin": "CBBA", "destination": "LPZ" },
-    { "flight_number": "OB-102", "origin": "LPZ", "destination": "CBBA" },
-    { "flight_number": "OB-103", "origin": "CBBA", "destination": "VVI" },
-    ...
-  ]
-  ```
 
 ---
 
-### 2. Filter Flights by Origin and Destination
-Filters flights matching the specified origin and destination.
+### 2. Filter Flights by Origin, Destination and Date
+Filters flights matching origin, destination, and departure date.
 
-- **URL**: `/flights?origin=:origin&destination=:destination`
+- **URL**: `/flights?origin=:origin&destination=:destination&date=:date`
 - **Method**: `GET`
 - **Example Request**:
   ```bash
-  curl "http://localhost:3000/flights?origin=CBBA&destination=LPZ"
+  curl "http://localhost:3000/flights?origin=LPB&destination=VVI&date=2026-10-15"
   ```
-- **Example Response**:
-  ```json
-  [
-    {
-      "flight_number": "OB-101",
-      "origin": "CBBA",
-      "destination": "LPZ"
-    }
-  ]
+  *(Also accepts `origin=CBBA&destination=LPZ&date=2026-10-03`)*
+
+---
+
+### 3. Filter Flights by Date Only
+Returns all flights operating in Bolivia on a specific date.
+
+- **URL**: `/flights?date=:date`
+- **Method**: `GET`
+- **Example Request**:
+  ```bash
+  curl "http://localhost:3000/flights?date=2026-10-05"
   ```
 
 ---
 
-### 3. Filter Flights by Flight Number (Query Param)
+### 4. Filter Flights by Flight Number or Carrier
 - **URL**: `/flights?flight_number=:flight_number`
+- **URL**: `/flights?carrier_code=:carrier_code`
 - **Method**: `GET`
 - **Example Request**:
   ```bash
-  curl "http://localhost:3000/flights?flight_number=OB-101"
-  ```
-- **Example Response**:
-  ```json
-  [
-    {
-      "flight_number": "OB-101",
-      "origin": "CBBA",
-      "destination": "LPZ"
-    }
-  ]
+  curl "http://localhost:3000/flights?flight_number=105&date=2026-10-15"
   ```
 
 ---
 
-### 4. Get a Single Flight by Path Parameter
-- **URL**: `/flights/:flight_number`
+### 5. Get a Specific Flight by ID
+- **URL**: `/flights/:id`
 - **Method**: `GET`
 - **Example Request**:
   ```bash
-  curl http://localhost:3000/flights/OB-101
-  ```
-- **Example Response**:
-  ```json
-  {
-    "flight_number": "OB-101",
-    "origin": "CBBA",
-    "destination": "LPZ"
-  }
-  ```
-- **If Not Found (404)**:
-  ```json
-  {
-    "error": "Flight not found",
-    "message": "No flight found with flight number: OB-999"
-  }
+  curl http://localhost:3000/flights/8J-105-20261015-LPB-VVI
   ```
 
 ---
 
-### 5. Health Check
+### 6. Health Check
 - **URL**: `/health`
 - **Method**: `GET`
-- **Example Response**:
-  ```json
-  {
-    "status": "ok",
-    "uptime": 45.12,
-    "timestamp": "2026-10-03T21:48:43.000Z"
-  }
-  ```
 
 ---
 
@@ -148,7 +183,7 @@ Filters flights matching the specified origin and destination.
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
    - **Instance Type**: `Free`
-6. Click **Create Web Service**. Render will automatically detect the port via `process.env.PORT` and provide your public URL.
+6. Click **Create Web Service**.
 
 ### Option B: Using Render Blueprints
 Render automatically detects the included `render.yaml` file:
